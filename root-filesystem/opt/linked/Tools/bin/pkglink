@@ -1,0 +1,51 @@
+#!/bin/bash
+
+DESTDIR=/usr/local
+SRCDIR=/opt/linked
+
+link_all()
+{
+  for ppkg in $SRCDIR/* ; do
+    pkg=`basename $ppkg`
+    echo "PACKAGE: $pkg"
+    ./treeoflinks -c $SRCDIR/$pkg $DESTDIR 0 
+  done
+}
+
+unlink_all()
+{
+  for ppkg in $SRCDIR/* ; do
+    pkg=`basename $ppkg`
+    echo "PACKAGE: $pkg"
+    ./treeoflinks -d $SRCDIR/$pkg $DESTDIR 0 
+  done
+}
+
+if [ $1 = "-c" ]
+  then
+  pkg=$2
+  ./treeoflinks -c $SRCDIR/$pkg $DESTDIR 0 
+  echo "DONE."
+elif [ $1 = "-d" ]
+  then
+  pkg=$2
+  ./treeoflinks -d $SRCDIR/$pkg $DESTDIR 0 
+  echo "DONE."
+elif [ $1 = "-C" ]
+  then
+  link_all
+  echo "DONE."
+elif [ $1 = "-D" ]
+  then
+  unlink_all
+  echo "DONE."
+else
+  echo "PiGi's Package Linker:"
+  echo "Usage:"
+  echo "$0 -h             - Help - You're looking at it!"
+  echo "$0 -c <pkg_name>  - Create links for $SRCDIR/<pkg_name>"
+  echo "$0 -C             - Create links for the whole $SRCDIR"
+  echo "$0 -d <pkg_name>  - Delete links for $SRCDIR/<pkg_name>"
+  echo "$0 -D             - Delete links for the whole $SRCDIR"
+fi
+

@@ -1,0 +1,95 @@
+#!/bin/bash
+# ---------------------------------------------------------------------------
+# Bash script to merge numerous sub-trees into a single tree by linking
+
+# Copyright 2008 - 2019, Piotr Górkiewicz <piotr.gorkiewicz@copperway.eu>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License at <http://www.gnu.org/licenses/> for
+# more details.
+
+# Arguments:
+# 1: opcode: -c (create) -d (delete)
+# 2: source path without '/' at the end
+# 3: destination path without '/' at the end
+# 4: recursion level (call it with 0)
+
+# Revision history:
+# 2008-05-11  Stable but dumb version that links only non-directory files
+# ---------------------------------------------------------------------------
+
+OPCODE=$1
+SRCPATH=$2
+DSTPATH=$3
+shopt -s dotglob
+if [ $# = 4 ]; then
+    LEVEL=$(($4+1))
+    if [ -d $SRCPATH ]; then
+        if [ ! -d $DSTPATH ]; then
+            if [ -e $DSTPATH ]; then
+               rm -f $DSTPATH
+            fi
+            mkdir -p $DSTPATH
+        fi
+        if [ $OPCODE = "-c" ]; then
+            echo "  ($LEVEL) Linking directory $SRCPATH"
+            for pfile in $SRCPATH/* ; do
+                file=`basename "$pfile"`
+                if [ -e "$pfile" ]; then
+                    if [ -d "$pfile" ]; then
+                        if [ -e $DSTPATH/$file ]; then
+                            echo "    found/exists (dir): $file"
+                        else
+                            echo "    creating item (dir) : $file"
+                            mkdir -p $DSTPATH/$file
+                        fi
+                        $0 $OPCODE $SRCPATH/$file $DSTPATH/$file $LEVEL
+                    else
+                        if [ -e $DSTPATH/$file ]; then
+                            echo "    WARNING: found/exists (file): $file"
+                        else
+                            echo "    linking item  (file): $file"
+                            ln -s "$pfile" $DSTPATH/$file
+                        fi
+                    fi
+                else
+                    echo "  ($LEVEL) FATAL ERROR - broken list, no $file"
+                fi
+            done
+        elif [ $OPCODE = "-d" ]; then
+            echo "  ($LEVEL) Unlinking directory $SRCPATH"
+            for pfile in $SRCPATH/* ; do
+                file=`basename "$pfile"`
+                if [ -e "$pfile" ]; then
+                    if [ ! -e $DSTPATH/$file ]; then
+                        echo "    not found: $file "
+                    else
+                        if [ -d "$pfile" ]; then
+                            echo "    found directory: $file"
+                            $0 $OPCODE $SRCPATH/$file $DSTPATH/$file $LEVEL
+                            echo "    trying to remove directory: $file"
+                            rmdir $DSTPATH/$file 1>/dev/null 2>/dev/null
+                        else
+                            echo "    removing link: $file"
+                            rm -f $DSTPATH/$file
+                        fi
+                    fi
+                else
+                    echo "  ($LEVEL) FATAL ERROR - broken list, no $file"
+                fi
+            done
+        fi
+    else
+        echo "  ($LEVEL) Skipping non-directory $SRCPATH"
+    fi
+else
+    echo "  (?) FATAL ERROR: wrong arguments number"
+fi
+

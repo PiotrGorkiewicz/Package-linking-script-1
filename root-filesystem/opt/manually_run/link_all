@@ -1,0 +1,9 @@
+#!/bin/bash
+
+rm -Rf /usr/local/*
+
+cd /opt/linked/Tools/bin
+./pkglink -C
+cd /
+ldconfig
+
